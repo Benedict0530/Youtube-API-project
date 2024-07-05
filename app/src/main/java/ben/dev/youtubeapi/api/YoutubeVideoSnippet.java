@@ -36,4 +36,5 @@ public class YoutubeVideoSnippet {
     public void setThumbnails(Thumbnails thumbnails) {
         this.thumbnails = thumbnails;
     }
+
 }

@@ -25,4 +25,5 @@ public class YoutubeVideo {
     public void setSnippet(YoutubeVideoSnippet snippet) {
         this.snippet = snippet;
     }
+
 }

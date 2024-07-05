@@ -5,6 +5,7 @@ import retrofit2.http.GET;
 import retrofit2.http.Query;
 
 public interface YoutubeApiService {
+    // Add this method to your YoutubeApiService interface
 
     @GET("search")
     Call<YoutubeSearchResponse> searchVideos(
@@ -12,4 +13,6 @@ public interface YoutubeApiService {
             @Query("q") String query,
             @Query("key") String apiKey
     );
+
+
 }

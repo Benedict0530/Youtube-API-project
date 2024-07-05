@@ -29,6 +29,7 @@ public class VideoAdapter extends RecyclerView.Adapter<VideoAdapter.ViewHolder> 
         this.listener = listener;
     }
 
+
     @NonNull
     @Override
     public ViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
@@ -59,48 +60,19 @@ public class VideoAdapter extends RecyclerView.Adapter<VideoAdapter.ViewHolder> 
         }
 
         public void bind(final YoutubeVideo video, final OnItemClickListener listener) {
+            // Bind data to the view
             if (video.getId() != null) {
-                String videoIdString = video.getId().getVideoId();
-                Log.d("VideoAdapter", "Binding video with ID: " + videoIdString);
-
                 YoutubeVideoSnippet snippet = video.getSnippet();
                 if (snippet != null) {
-                    // Set title and description
                     textViewTitle.setText(snippet.getTitle());
                     textViewDescription.setText(snippet.getDescription());
-
-                    // Load thumbnail if available
                     Thumbnails thumbnails = snippet.getThumbnails();
-                    if (thumbnails != null) {
-                        // Choose medium thumbnail if available
-                        Thumbnail mediumThumbnail = thumbnails.getMediumThumbnail();
-                        String thumbnailUrl = (mediumThumbnail != null) ? mediumThumbnail.getUrl() : null;
-
-                        // Log the thumbnail URL
-                        Log.d("VideoAdapter", "Thumbnail URL: " + thumbnailUrl);
-
-                        if (thumbnailUrl != null && !thumbnailUrl.isEmpty()) {
-                            Picasso.get().load(thumbnailUrl)
-                                    .placeholder(R.drawable.ic_launcher_background)
-                                    .error(R.drawable.ic_launcher_foreground)
-                                    .into(imageViewThumbnail);
-                        } else {
-                            imageViewThumbnail.setImageResource(R.drawable.ic_launcher_background);
-                            Log.d("Picasso", "Thumbnail URL is null or empty for video ID: " + videoIdString);
-                        }
-                    } else {
-                        imageViewThumbnail.setImageResource(R.drawable.ic_launcher_background);
-                        Log.d("Picasso", "Thumbnails object is null for video ID: " + videoIdString);
-                    }
-                } else {
-                    Log.d("Snippet", "Snippet object is null for video ID: " + videoIdString);
+                    Thumbnail mediumThumbnail = thumbnails.getMediumThumbnail();
+                    String thumbnailUrl = (mediumThumbnail != null) ? mediumThumbnail.getUrl() : null;
+                    Picasso.get().load(thumbnailUrl).into(imageViewThumbnail);
                 }
-            } else {
-                Log.d("VideoAdapter", "Video ID is null for video, unable to load thumbnail.");
-                imageViewThumbnail.setImageResource(R.drawable.ic_launcher_background);
             }
 
-            // Handle item click listener
             itemView.setOnClickListener(new View.OnClickListener() {
                 @Override
                 public void onClick(View v) {
@@ -110,7 +82,6 @@ public class VideoAdapter extends RecyclerView.Adapter<VideoAdapter.ViewHolder> 
                 }
             });
         }
-
     }
 
     public interface OnItemClickListener {
