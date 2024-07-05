@@ -8,7 +8,6 @@ import android.widget.Button;
 import android.widget.EditText;
 import android.widget.Toast;
 
-import androidx.activity.EdgeToEdge;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.graphics.Insets;
 import androidx.core.view.ViewCompat;
@@ -18,7 +17,12 @@ import androidx.recyclerview.widget.RecyclerView;
 
 import com.google.gson.Gson;
 
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.util.List;
+import java.util.ArrayList;
 
 import ben.dev.youtubeapi.api.VideoAdapter;
 import ben.dev.youtubeapi.api.YoutubeApiService;
@@ -40,12 +44,12 @@ public class MainActivity extends AppCompatActivity {
 
     private YoutubeApiService apiService;
     private VideoAdapter adapter;
+    private List<String> apiKeys;
+    private int currentApiKeyIndex = 0;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        setContentView(R.layout.activity_main);
-        EdgeToEdge.enable(this);
         setContentView(R.layout.activity_main);
         ViewCompat.setOnApplyWindowInsetsListener(findViewById(R.id.main), (v, insets) -> {
             Insets systemBars = insets.getInsets(WindowInsetsCompat.Type.systemBars());
@@ -57,6 +61,9 @@ public class MainActivity extends AppCompatActivity {
         editTextSearch = findViewById(R.id.editTextSearch);
         buttonSearch = findViewById(R.id.buttonSearch);
         recyclerViewVideos = findViewById(R.id.recyclerViewVideos);
+
+        // Read API keys from file
+        apiKeys = readApiKeys();
 
         // Initialize Retrofit and YoutubeApiService
         apiService = new Retrofit.Builder()
@@ -84,8 +91,40 @@ public class MainActivity extends AppCompatActivity {
 
     }
 
+    private List<String> readApiKeys() {
+        List<String> keys = new ArrayList<>();
+        InputStream inputStream = null;
+        try {
+            inputStream = getAssets().open("api_keys.txt");
+            BufferedReader reader = new BufferedReader(new InputStreamReader(inputStream));
+            String line;
+            while ((line = reader.readLine()) != null) {
+                keys.add(line.trim());
+            }
+        } catch (IOException e) {
+            Log.e(TAG, "Error reading API keys", e);
+        } finally {
+            if (inputStream != null) {
+                try {
+                    inputStream.close();
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+            }
+        }
+        return keys;
+    }
+
     private void loadPopularVideos() {
-        String apiKey = "AIzaSyB0_ip-ZbKsd4BIgxQjVnHirUm_nHxRx8Q"; // Replace with your actual API key
+        loadPopularVideosWithRetry(currentApiKeyIndex);
+    }
+
+    private void searchVideos(String query) {
+        searchVideosWithRetry(query, currentApiKeyIndex);
+    }
+
+    private void loadPopularVideosWithRetry(final int apiKeyIndex) {
+        String apiKey = apiKeys.get(apiKeyIndex);
         String query = "popular videos"; // Example query for popular videos
 
         Call<YoutubeSearchResponse> call = apiService.searchVideos("snippet", query, apiKey);
@@ -101,22 +140,27 @@ public class MainActivity extends AppCompatActivity {
                         handleNoVideosFound();
                     }
                 } else {
-                    handleFailedResponse(response);
+                    // Retry with the next API key
+                    int nextApiKeyIndex = (apiKeyIndex + 1) % apiKeys.size();
+                    loadPopularVideosWithRetry(nextApiKeyIndex);
                 }
             }
 
             @Override
             public void onFailure(Call<YoutubeSearchResponse> call, Throwable t) {
-                handleNetworkError(t);
+                // Log the error
+                Log.e(TAG, "API Request failed with API key: " + apiKey, t);
+
+                // Retry with the next API key
+                int nextApiKeyIndex = (apiKeyIndex + 1) % apiKeys.size();
+                loadPopularVideosWithRetry(nextApiKeyIndex);
             }
         });
+        Log.d(TAG, "Using API key: " + apiKey + " for request.");
     }
 
-
-
-    // Method to search videos based on query
-    private void searchVideos(String query) {
-        String apiKey = "AIzaSyB0_ip-ZbKsd4BIgxQjVnHirUm_nHxRx8Q"; // Replace with your actual API key
+    private void searchVideosWithRetry(final String query, final int apiKeyIndex) {
+        String apiKey = apiKeys.get(apiKeyIndex);
 
         Call<YoutubeSearchResponse> call = apiService.searchVideos("snippet", query, apiKey);
         call.enqueue(new Callback<YoutubeSearchResponse>() {
@@ -131,19 +175,24 @@ public class MainActivity extends AppCompatActivity {
                         handleNoVideosFound();
                     }
                 } else {
-                    handleFailedResponse(response);
+                    // Retry with the next API key
+                    int nextApiKeyIndex = (apiKeyIndex + 1) % apiKeys.size();
+                    searchVideosWithRetry(query, nextApiKeyIndex);
                 }
             }
 
-
             @Override
             public void onFailure(Call<YoutubeSearchResponse> call, Throwable t) {
-                handleNetworkError(t);
+                // Log the error
+                Log.e(TAG, "API Request failed with API key: " + apiKey, t);
+
+                // Retry with the next API key
+                int nextApiKeyIndex = (apiKeyIndex + 1) % apiKeys.size();
+                searchVideosWithRetry(query, nextApiKeyIndex);
             }
         });
+        Log.d(TAG, "Using API key: " + apiKey + " for request.");
     }
-
-
 
     // Method to handle successful response and display search results
     private void showVideos(List<YoutubeVideo> videos) {
@@ -151,7 +200,11 @@ public class MainActivity extends AppCompatActivity {
             @Override
             public void onItemClick(YoutubeVideo video) {
                 if (video.getId() != null) {
-                    openVideoPlayer(video.getId().getVideoId());
+                    if ("youtube#video".equals(video.getId().getKind())) {
+                        openVideoPlayer(video.getId().getVideoId(), videos);
+                    } else if ("youtube#channel".equals(video.getId().getKind())) {
+                        openChannelLink(video.getId().getChannelId(), video.getSnippet().getChannelTitle());
+                    }
                 } else {
                     Toast.makeText(MainActivity.this, "Video ID is null", Toast.LENGTH_SHORT).show();
                 }
@@ -167,16 +220,6 @@ public class MainActivity extends AppCompatActivity {
         Toast.makeText(MainActivity.this, "No videos found", Toast.LENGTH_SHORT).show();
     }
 
-    // Method to handle failed API response
-    private void handleFailedResponse(Response<YoutubeSearchResponse> response) {
-        String errorMessage = "Failed to get videos";
-        if (response.message() != null) {
-            errorMessage += ": " + response.message();
-        }
-        Log.e(TAG, errorMessage);
-        Toast.makeText(MainActivity.this, errorMessage, Toast.LENGTH_SHORT).show();
-    }
-
     // Method to handle network errors
     private void handleNetworkError(Throwable t) {
         String errorMessage = "Failed to fetch videos";
@@ -190,9 +233,27 @@ public class MainActivity extends AppCompatActivity {
     }
 
     // Method to play a video using its ID
-    private void openVideoPlayer(String videoId) {
-        Intent intent = new Intent(MainActivity.this, VideoPlayerActivity.class);
-        intent.putExtra("videoId", videoId);
-        startActivity(intent);
+    private void openVideoPlayer(String videoId, List<YoutubeVideo> videos) {
+        if (videoId != null) {
+            Intent intent = new Intent(MainActivity.this, VideoPlayerActivity.class);
+            intent.putExtra("videoId", videoId);
+            // Pass all videos to VideoPlayerActivity
+            intent.putExtra("relatedVideos", new Gson().toJson(videos));
+            startActivity(intent);
+        } else {
+            loadPopularVideos();
+        }
     }
+
+    private void openChannelLink(String channelId, String channelName) {
+        if (channelId != null) {
+            Intent intent = new Intent(MainActivity.this, ChannelDetailsActivity.class);
+            intent.putExtra("channelId", channelId);
+            intent.putExtra("channelName", channelName);
+            startActivity(intent);
+        } else {
+            Toast.makeText(MainActivity.this, "Channel ID is null", Toast.LENGTH_SHORT).show();
+        }
+    }
+
 }

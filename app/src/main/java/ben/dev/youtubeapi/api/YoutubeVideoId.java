@@ -4,15 +4,15 @@ import com.google.gson.annotations.SerializedName;
 
 public class YoutubeVideoId {
 
-    // This field will hold the videoId when available
     @SerializedName("videoId")
     private String videoId;
 
-    // For other cases, it can be a generic id field
-    @SerializedName("id")
-    private String id;
+    @SerializedName("channelId")
+    private String channelId;
 
-    // Getters and setters
+    @SerializedName("kind")
+    private String kind; // Indicates the type of ID (video or channel)
+
     public String getVideoId() {
         return videoId;
     }
@@ -21,11 +21,19 @@ public class YoutubeVideoId {
         this.videoId = videoId;
     }
 
-    public String getId() {
-        return id;
+    public String getChannelId() {
+        return channelId;
     }
 
-    public void setId(String id) {
-        this.id = id;
+    public void setChannelId(String channelId) {
+        this.channelId = channelId;
+    }
+
+    public String getKind() {
+        return kind;
+    }
+
+    public void setKind(String kind) {
+        this.kind = kind;
     }
 }

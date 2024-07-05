@@ -1,5 +1,6 @@
 package ben.dev.youtubeapi.api;
 
+
 import com.google.gson.annotations.SerializedName;
 
 public class YoutubeVideoSnippet {
@@ -11,6 +12,9 @@ public class YoutubeVideoSnippet {
 
     @SerializedName("thumbnails")
     private Thumbnails thumbnails;
+
+    @SerializedName("channelTitle")
+    private String channelTitle;
 
     // Getters and setters
     public String getTitle() {
@@ -37,4 +41,11 @@ public class YoutubeVideoSnippet {
         this.thumbnails = thumbnails;
     }
 
+    public String getChannelTitle() {
+        return channelTitle;
+    }
+
+    public void setChannelTitle(String channelTitle) {
+        this.channelTitle = channelTitle;
+    }
 }
