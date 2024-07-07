@@ -3,9 +3,13 @@ package ben.dev.youtubeapi;
 import android.content.Intent;
 import android.os.Bundle;
 import android.util.Log;
+import android.view.KeyEvent;
 import android.view.View;
+import android.view.inputmethod.EditorInfo;
 import android.widget.Button;
 import android.widget.EditText;
+import android.widget.ImageView;
+import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.appcompat.app.AppCompatActivity;
@@ -39,7 +43,7 @@ public class MainActivity extends AppCompatActivity {
     private static final String TAG = "MainActivityLog";
 
     private EditText editTextSearch;
-    private Button buttonSearch;
+    private ImageView buttonSearch;
     private RecyclerView recyclerViewVideos;
 
     private YoutubeApiService apiService;
@@ -84,10 +88,29 @@ public class MainActivity extends AppCompatActivity {
                 if (!query.isEmpty()) {
                     searchVideos(query);
                 } else {
-                    Toast.makeText(MainActivity.this, "Please enter a search query", Toast.LENGTH_SHORT).show();
+                    Toast.makeText(MainActivity.this, "Search input cannot be empty", Toast.LENGTH_SHORT).show();
                 }
             }
         });
+        // Set EditorActionListener for EditText (search on Enter key press)
+        editTextSearch.setOnEditorActionListener(new TextView.OnEditorActionListener() {
+            @Override
+            public boolean onEditorAction(TextView v, int actionId, KeyEvent event) {
+                if (actionId == EditorInfo.IME_ACTION_DONE ||
+                        (event != null && event.getAction() == KeyEvent.ACTION_DOWN && event.getKeyCode() == KeyEvent.KEYCODE_ENTER)) {
+                    String query = editTextSearch.getText().toString().trim();
+                    if (!query.isEmpty()) {
+                        searchVideos(query);
+                    } else {
+                        Toast.makeText(MainActivity.this, "Search input cannot be empty", Toast.LENGTH_SHORT).show();
+                    }
+                    return true; // Consume the event
+                }
+                return false; // Return false to pass other events to the default listener
+            }
+        });
+
+
 
     }
 
@@ -127,7 +150,7 @@ public class MainActivity extends AppCompatActivity {
         String apiKey = apiKeys.get(apiKeyIndex);
         String query = "popular videos"; // Example query for popular videos
 
-        Call<YoutubeSearchResponse> call = apiService.searchVideos("snippet", query, apiKey);
+        Call<YoutubeSearchResponse> call = apiService.searchVideos("snippet", query, apiKey, 20);
         call.enqueue(new Callback<YoutubeSearchResponse>() {
             @Override
             public void onResponse(Call<YoutubeSearchResponse> call, Response<YoutubeSearchResponse> response) {
@@ -135,12 +158,12 @@ public class MainActivity extends AppCompatActivity {
                     Log.d("API Response", new Gson().toJson(response.body())); // Log the response
                     List<YoutubeVideo> videos = response.body().getItems();
                     if (videos != null && !videos.isEmpty()) {
-                        showVideos(videos);
+                        showVideos(videos); // Display videos in RecyclerView
                     } else {
-                        handleNoVideosFound();
+                        handleNoVideosFound(); // Handle case where no videos are returned
                     }
                 } else {
-                    // Retry with the next API key
+                    // Retry with the next API key on unsuccessful response
                     int nextApiKeyIndex = (apiKeyIndex + 1) % apiKeys.size();
                     loadPopularVideosWithRetry(nextApiKeyIndex);
                 }
@@ -151,7 +174,7 @@ public class MainActivity extends AppCompatActivity {
                 // Log the error
                 Log.e(TAG, "API Request failed with API key: " + apiKey, t);
 
-                // Retry with the next API key
+                // Retry with the next API key on failure
                 int nextApiKeyIndex = (apiKeyIndex + 1) % apiKeys.size();
                 loadPopularVideosWithRetry(nextApiKeyIndex);
             }
@@ -159,10 +182,11 @@ public class MainActivity extends AppCompatActivity {
         Log.d(TAG, "Using API key: " + apiKey + " for request.");
     }
 
+
     private void searchVideosWithRetry(final String query, final int apiKeyIndex) {
         String apiKey = apiKeys.get(apiKeyIndex);
 
-        Call<YoutubeSearchResponse> call = apiService.searchVideos("snippet", query, apiKey);
+        Call<YoutubeSearchResponse> call = apiService.searchVideos("snippet", query, apiKey, 20); // Adjust maxResults as needed
         call.enqueue(new Callback<YoutubeSearchResponse>() {
             @Override
             public void onResponse(Call<YoutubeSearchResponse> call, Response<YoutubeSearchResponse> response) {
@@ -193,6 +217,7 @@ public class MainActivity extends AppCompatActivity {
         });
         Log.d(TAG, "Using API key: " + apiKey + " for request.");
     }
+
 
     // Method to handle successful response and display search results
     private void showVideos(List<YoutubeVideo> videos) {
@@ -254,6 +279,21 @@ public class MainActivity extends AppCompatActivity {
         } else {
             Toast.makeText(MainActivity.this, "Channel ID is null", Toast.LENGTH_SHORT).show();
         }
+    }
+    @Override
+    public boolean dispatchKeyEvent(KeyEvent event) {
+        if (event.getAction() == KeyEvent.ACTION_DOWN &&
+                event.getKeyCode() == KeyEvent.KEYCODE_ENTER) {
+            // Handle the enter key press here
+            String query = editTextSearch.getText().toString().trim();
+            if (!query.isEmpty()) {
+                searchVideos(query);
+            } else {
+                Toast.makeText(MainActivity.this, "Search input cannot be empty", Toast.LENGTH_SHORT).show();
+            }
+            return true; // Consume the event
+        }
+        return super.dispatchKeyEvent(event);
     }
 
 }

@@ -5,13 +5,14 @@ import retrofit2.http.GET;
 import retrofit2.http.Query;
 
 public interface YoutubeApiService {
-    // Add this method to your YoutubeApiService interface
 
+    // Method to search videos based on a query
     @GET("search")
     Call<YoutubeSearchResponse> searchVideos(
             @Query("part") String part,
             @Query("q") String query,
-            @Query("key") String apiKey
+            @Query("key") String apiKey,
+            @Query("maxResults") int maxResults  // Add maxResults parameter
     );
 
 

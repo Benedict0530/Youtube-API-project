@@ -3,9 +3,13 @@ package ben.dev.youtubeapi;
 import android.content.Intent;
 import android.content.pm.ActivityInfo;
 import android.net.Uri;
+import android.os.Build;
 import android.os.Bundle;
 import android.view.View;
+import android.view.WindowInsets;
+import android.view.WindowInsetsController;
 import android.widget.Button;
+import android.widget.ImageView;
 import android.widget.ProgressBar;
 import android.widget.RelativeLayout;
 import android.widget.Toast;
@@ -33,7 +37,7 @@ public class VideoPlayerActivity extends AppCompatActivity {
     private YouTubePlayerView youTubePlayerView;
     private String videoId;
     private boolean isFullscreen = false;
-    private Button fullscreenButton;
+    private ImageView fullscreenButton;
     private RecyclerView recyclerViewRelatedVideos;
     private VideoAdapter adapter;
     private ProgressBar progressBar;
@@ -76,13 +80,14 @@ public class VideoPlayerActivity extends AppCompatActivity {
                 }
             });
         }
+
     }
 
     private void showRelatedVideos(List<YoutubeVideo> videos) {
-        // Filter out channel items from the list
+        // Filter out channel items and the current video from the list
         List<YoutubeVideo> filteredVideos = new ArrayList<>();
         for (YoutubeVideo video : videos) {
-            if (video.getId() != null && video.getId().getKind().equals("youtube#video")) {
+            if (video.getId() != null && video.getId().getKind().equals("youtube#video") && !video.getId().getVideoId().equals(videoId)) {
                 filteredVideos.add(video);
             }
         }
@@ -101,6 +106,7 @@ public class VideoPlayerActivity extends AppCompatActivity {
         recyclerViewRelatedVideos.setAdapter(adapter);
         recyclerViewRelatedVideos.setVisibility(View.VISIBLE);
     }
+
 
 
 
@@ -152,7 +158,6 @@ public class VideoPlayerActivity extends AppCompatActivity {
         // Set landscape orientation
         setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE);
 
-
         // Set YouTubePlayerView to match parent
         RelativeLayout.LayoutParams params = (RelativeLayout.LayoutParams) youTubePlayerView.getLayoutParams();
         params.width = RelativeLayout.LayoutParams.MATCH_PARENT;
@@ -175,6 +180,7 @@ public class VideoPlayerActivity extends AppCompatActivity {
         params.width = RelativeLayout.LayoutParams.MATCH_PARENT;
         params.height = RelativeLayout.LayoutParams.WRAP_CONTENT;
         youTubePlayerView.setLayoutParams(params);
+
 
         // Show fullscreen button
         fullscreenButton.setVisibility(View.VISIBLE);

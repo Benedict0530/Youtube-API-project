@@ -10,6 +10,9 @@ public class YoutubeVideo {
     @SerializedName("snippet")
     private YoutubeVideoSnippet snippet;
 
+    // Example pagination metadata fields
+    private String nextPageToken; // Store next page token if needed
+
     public YoutubeVideoId getId() {
         return id;
     }
@@ -26,4 +29,11 @@ public class YoutubeVideo {
         this.snippet = snippet;
     }
 
+    public String getNextPageToken() {
+        return nextPageToken;
+    }
+
+    public void setNextPageToken(String nextPageToken) {
+        this.nextPageToken = nextPageToken;
+    }
 }

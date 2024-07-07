@@ -34,6 +34,7 @@ public class VideoAdapter extends RecyclerView.Adapter<VideoAdapter.ViewHolder> 
     @Override
     public ViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
         View view = LayoutInflater.from(parent.getContext()).inflate(R.layout.item_video, parent, false);
+        view.setBackgroundResource(R.drawable.rounded_croners);
         return new ViewHolder(view);
     }
 
@@ -45,6 +46,12 @@ public class VideoAdapter extends RecyclerView.Adapter<VideoAdapter.ViewHolder> 
     @Override
     public int getItemCount() {
         return videos.size();
+    }
+
+    public void addMoreVideos(List<YoutubeVideo> newVideos) {
+        int currentSize = videos.size();
+        videos.addAll(newVideos);
+        notifyItemRangeInserted(currentSize, newVideos.size());
     }
 
     public class ViewHolder extends RecyclerView.ViewHolder {
