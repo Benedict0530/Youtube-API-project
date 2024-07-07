@@ -6,6 +6,7 @@ android {
     namespace 'ben.dev.youtubeapi'
     compileSdk 34
 
+
     defaultConfig {
         applicationId "ben.dev.youtubeapi"
         minSdk 24
@@ -13,7 +14,23 @@ android {
         versionCode 1
         versionName "1.0"
 
+        // Access API keys from gradle.properties
+        def apiKeys = []
+        for (int i = 1; i <= 10; i++) {
+            apiKeys.add(project.findProperty("apiKey${i}"))
+        }
+
+        // Define buildConfigField for each apiKey
+        for (int i = 0; i < apiKeys.size(); i++) {
+            buildConfigField "String", "YOUTUBE_API_KEY${i + 1}", "\"${apiKeys[i] ?: ''}\""
+        }
+
+
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
+    }
+
+    buildFeatures {
+        buildConfig true
     }
 
     buildTypes {
@@ -29,6 +46,7 @@ android {
 }
 
 dependencies {
+    implementation fileTree(dir: 'libs', include: ['*.jar'])
 
     implementation libs.appcompat
     implementation libs.material

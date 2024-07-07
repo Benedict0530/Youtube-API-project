@@ -32,11 +32,14 @@ import ben.dev.youtubeapi.api.VideoAdapter;
 import ben.dev.youtubeapi.api.YoutubeApiService;
 import ben.dev.youtubeapi.api.YoutubeSearchResponse;
 import ben.dev.youtubeapi.api.YoutubeVideo;
+
 import retrofit2.Call;
 import retrofit2.Callback;
 import retrofit2.Response;
 import retrofit2.Retrofit;
 import retrofit2.converter.gson.GsonConverterFactory;
+
+
 
 public class MainActivity extends AppCompatActivity {
 
@@ -66,8 +69,20 @@ public class MainActivity extends AppCompatActivity {
         buttonSearch = findViewById(R.id.buttonSearch);
         recyclerViewVideos = findViewById(R.id.recyclerViewVideos);
 
-        // Read API keys from file
-        apiKeys = readApiKeys();
+        // Read API keys from Gradle properties
+        apiKeys = new ArrayList<>();
+        apiKeys.add(BuildConfig.YOUTUBE_API_KEY1);
+        apiKeys.add(BuildConfig.YOUTUBE_API_KEY2);
+        apiKeys.add(BuildConfig.YOUTUBE_API_KEY3);
+        apiKeys.add(BuildConfig.YOUTUBE_API_KEY4);
+        apiKeys.add(BuildConfig.YOUTUBE_API_KEY5);
+        apiKeys.add(BuildConfig.YOUTUBE_API_KEY6);
+        apiKeys.add(BuildConfig.YOUTUBE_API_KEY7);
+        apiKeys.add(BuildConfig.YOUTUBE_API_KEY8);
+        apiKeys.add(BuildConfig.YOUTUBE_API_KEY9);
+        apiKeys.add(BuildConfig.YOUTUBE_API_KEY10);
+        Log.d(TAG, "API Key: " + apiKeys);
+
 
         // Initialize Retrofit and YoutubeApiService
         apiService = new Retrofit.Builder()
@@ -80,62 +95,31 @@ public class MainActivity extends AppCompatActivity {
         recyclerViewVideos.setLayoutManager(new LinearLayoutManager(this));
 
         loadPopularVideos();
+
         // Set onClickListener for Search button
-        buttonSearch.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
+        buttonSearch.setOnClickListener(v -> {
+            String query = editTextSearch.getText().toString().trim();
+            if (!query.isEmpty()) {
+                searchVideos(query);
+            } else {
+                Toast.makeText(MainActivity.this, "Search input cannot be empty", Toast.LENGTH_SHORT).show();
+            }
+        });
+
+        // Set EditorActionListener for EditText (search on Enter key press)
+        editTextSearch.setOnEditorActionListener((v, actionId, event) -> {
+            if (actionId == EditorInfo.IME_ACTION_DONE ||
+                    (event != null && event.getAction() == KeyEvent.ACTION_DOWN && event.getKeyCode() == KeyEvent.KEYCODE_ENTER)) {
                 String query = editTextSearch.getText().toString().trim();
                 if (!query.isEmpty()) {
                     searchVideos(query);
                 } else {
                     Toast.makeText(MainActivity.this, "Search input cannot be empty", Toast.LENGTH_SHORT).show();
                 }
+                return true; // Consume the event
             }
+            return false; // Return false to pass other events to the default listener
         });
-        // Set EditorActionListener for EditText (search on Enter key press)
-        editTextSearch.setOnEditorActionListener(new TextView.OnEditorActionListener() {
-            @Override
-            public boolean onEditorAction(TextView v, int actionId, KeyEvent event) {
-                if (actionId == EditorInfo.IME_ACTION_DONE ||
-                        (event != null && event.getAction() == KeyEvent.ACTION_DOWN && event.getKeyCode() == KeyEvent.KEYCODE_ENTER)) {
-                    String query = editTextSearch.getText().toString().trim();
-                    if (!query.isEmpty()) {
-                        searchVideos(query);
-                    } else {
-                        Toast.makeText(MainActivity.this, "Search input cannot be empty", Toast.LENGTH_SHORT).show();
-                    }
-                    return true; // Consume the event
-                }
-                return false; // Return false to pass other events to the default listener
-            }
-        });
-
-
-
-    }
-
-    private List<String> readApiKeys() {
-        List<String> keys = new ArrayList<>();
-        InputStream inputStream = null;
-        try {
-            inputStream = getAssets().open("api_keys.txt");
-            BufferedReader reader = new BufferedReader(new InputStreamReader(inputStream));
-            String line;
-            while ((line = reader.readLine()) != null) {
-                keys.add(line.trim());
-            }
-        } catch (IOException e) {
-            Log.e(TAG, "Error reading API keys", e);
-        } finally {
-            if (inputStream != null) {
-                try {
-                    inputStream.close();
-                } catch (IOException e) {
-                    e.printStackTrace();
-                }
-            }
-        }
-        return keys;
     }
 
     private void loadPopularVideos() {
@@ -182,7 +166,6 @@ public class MainActivity extends AppCompatActivity {
         Log.d(TAG, "Using API key: " + apiKey + " for request.");
     }
 
-
     private void searchVideosWithRetry(final String query, final int apiKeyIndex) {
         String apiKey = apiKeys.get(apiKeyIndex);
 
@@ -218,21 +201,17 @@ public class MainActivity extends AppCompatActivity {
         Log.d(TAG, "Using API key: " + apiKey + " for request.");
     }
 
-
     // Method to handle successful response and display search results
     private void showVideos(List<YoutubeVideo> videos) {
-        adapter = new VideoAdapter(MainActivity.this, videos, new VideoAdapter.OnItemClickListener() {
-            @Override
-            public void onItemClick(YoutubeVideo video) {
-                if (video.getId() != null) {
-                    if ("youtube#video".equals(video.getId().getKind())) {
-                        openVideoPlayer(video.getId().getVideoId(), videos);
-                    } else if ("youtube#channel".equals(video.getId().getKind())) {
-                        openChannelLink(video.getId().getChannelId(), video.getSnippet().getChannelTitle());
-                    }
-                } else {
-                    Toast.makeText(MainActivity.this, "Video ID is null", Toast.LENGTH_SHORT).show();
+        adapter = new VideoAdapter(MainActivity.this, videos, video -> {
+            if (video.getId() != null) {
+                if ("youtube#video".equals(video.getId().getKind())) {
+                    openVideoPlayer(video.getId().getVideoId(), videos);
+                } else if ("youtube#channel".equals(video.getId().getKind())) {
+                    openChannelLink(video.getId().getChannelId(), video.getSnippet().getChannelTitle());
                 }
+            } else {
+                Toast.makeText(MainActivity.this, "Video ID is null", Toast.LENGTH_SHORT).show();
             }
         });
         recyclerViewVideos.setAdapter(adapter);
@@ -280,6 +259,7 @@ public class MainActivity extends AppCompatActivity {
             Toast.makeText(MainActivity.this, "Channel ID is null", Toast.LENGTH_SHORT).show();
         }
     }
+
     @Override
     public boolean dispatchKeyEvent(KeyEvent event) {
         if (event.getAction() == KeyEvent.ACTION_DOWN &&
@@ -295,5 +275,4 @@ public class MainActivity extends AppCompatActivity {
         }
         return super.dispatchKeyEvent(event);
     }
-
 }
