@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+
+    <style name="BottomNavigationStyle" parent="Widget.Design.BottomNavigationView">
+        <!-- Customize the height as per your requirement -->
+        <item name="android:layout_height">20dp</item>
+        <item name="itemIconTint">@android:color/white</item>
+    </style>
+
+</resources>

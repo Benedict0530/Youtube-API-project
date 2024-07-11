@@ -15,5 +15,14 @@ public interface YoutubeApiService {
             @Query("maxResults") int maxResults  // Add maxResults parameter
     );
 
+    // Method to fetch related videos based on a videoId
+    @GET("search")
+    Call<YoutubeSearchResponse> getRelatedVideos(
+            @Query("part") String part,
+            @Query("relatedToVideoId") String videoId,
+            @Query("key") String apiKey,
+            @Query("maxResults") int maxResults  // Add maxResults parameter
+    );
+
 
 }

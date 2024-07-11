@@ -1,9 +1,9 @@
 package ben.dev.youtubeapi.api;
 
-
 import com.google.gson.annotations.SerializedName;
 
 public class YoutubeVideoSnippet {
+
     @SerializedName("title")
     private String title;
 
@@ -15,6 +15,10 @@ public class YoutubeVideoSnippet {
 
     @SerializedName("channelTitle")
     private String channelTitle;
+
+    // Add statistics field if necessary
+    @SerializedName("statistics")
+    private YoutubeVideoStatistics statistics;
 
     // Getters and setters
     public String getTitle() {
@@ -47,5 +51,13 @@ public class YoutubeVideoSnippet {
 
     public void setChannelTitle(String channelTitle) {
         this.channelTitle = channelTitle;
+    }
+
+    public YoutubeVideoStatistics getStatistics() {
+        return statistics;
+    }
+
+    public void setStatistics(YoutubeVideoStatistics statistics) {
+        this.statistics = statistics;
     }
 }

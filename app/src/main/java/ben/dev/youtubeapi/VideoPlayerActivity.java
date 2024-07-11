@@ -2,19 +2,17 @@ package ben.dev.youtubeapi;
 
 import android.content.Intent;
 import android.content.pm.ActivityInfo;
-import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
 import android.view.View;
 import android.view.WindowInsets;
 import android.view.WindowInsetsController;
-import android.widget.Button;
 import android.widget.ImageView;
 import android.widget.ProgressBar;
 import android.widget.RelativeLayout;
+import android.widget.TextView;
 import android.widget.Toast;
 
-import androidx.activity.EdgeToEdge;
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.recyclerview.widget.LinearLayoutManager;
@@ -36,6 +34,8 @@ public class VideoPlayerActivity extends AppCompatActivity {
 
     private YouTubePlayerView youTubePlayerView;
     private String videoId;
+    private String channelName_extra;
+    private TextView channel_Name;
     private boolean isFullscreen = false;
     private ImageView fullscreenButton;
     private RecyclerView recyclerViewRelatedVideos;
@@ -52,9 +52,15 @@ public class VideoPlayerActivity extends AppCompatActivity {
         fullscreenButton = findViewById(R.id.btn_fullscreen);
         recyclerViewRelatedVideos = findViewById(R.id.recyclerViewRelatedVideos);
         progressBar = findViewById(R.id.progress_bar);
+        channel_Name = findViewById(R.id.text_channel_name);
+
 
         // Get video ID from intent
         videoId = getIntent().getStringExtra("videoId");
+        channelName_extra = getIntent().getStringExtra("channelName");
+
+        channel_Name.setText(channelName_extra);
+
 
         // Initialize and play video
         initializePlayer();
@@ -96,7 +102,7 @@ public class VideoPlayerActivity extends AppCompatActivity {
             @Override
             public void onItemClick(YoutubeVideo video) {
                 if (video.getId() != null && video.getId().getVideoId() != null) {
-                    openVideoPlayer(video.getId().getVideoId(), videos);
+                    openVideoPlayer(video.getId().getVideoId(), filteredVideos, video.getId().getChannelId(), video.getSnippet().getChannelTitle());
                 } else {
                     Toast.makeText(VideoPlayerActivity.this, "Video ID is null", Toast.LENGTH_SHORT).show();
                 }
@@ -112,23 +118,23 @@ public class VideoPlayerActivity extends AppCompatActivity {
 
 
 
-    // Method to play a video using its ID
-    private void openVideoPlayer(String videoId, List<YoutubeVideo> videos) {
-        if(videoId != null) {
-            // Pass all videos to the new instance of VideoPlayerActivity
-            Gson gson = new Gson();
-            String relatedVideosJson = gson.toJson(videos);
 
+    // Method to play a video using its ID
+    private void openVideoPlayer(String videoId, List<YoutubeVideo> videos, String channelId, String channelName) {
+        if(videoId != null) {
             // Create a new intent for VideoPlayerActivity
             Intent intent = new Intent(VideoPlayerActivity.this, VideoPlayerActivity.class);
             intent.putExtra("videoId", videoId);
-            intent.putExtra("relatedVideos", relatedVideosJson);
+            intent.putExtra("channelId", channelId);
+            intent.putExtra("channelName", channelName);
+            intent.putExtra("relatedVideos", new Gson().toJson(videos)); // Pass filtered videos here
             startActivity(intent);
         } else {
             // Handle the case where videoId is null
             Toast.makeText(VideoPlayerActivity.this, "Video ID is null", Toast.LENGTH_SHORT).show();
         }
     }
+
 
     @Override
     protected void onDestroy() {
@@ -142,7 +148,7 @@ public class VideoPlayerActivity extends AppCompatActivity {
             exitFullscreen();
             fullscreenButton.setVisibility(View.VISIBLE);
         } else {
-            super.onBackPressed();
+            finish();
         }
     }
 
@@ -167,6 +173,8 @@ public class VideoPlayerActivity extends AppCompatActivity {
         // Hide fullscreen button
         fullscreenButton.setVisibility(View.GONE);
 
+        setImmersiveMode();
+
         // Set flag
         isFullscreen = true;
     }
@@ -185,7 +193,43 @@ public class VideoPlayerActivity extends AppCompatActivity {
         // Show fullscreen button
         fullscreenButton.setVisibility(View.VISIBLE);
 
+        reverseSetImmersiveMode();
         // Set flag
         isFullscreen = false;
     }
+
+    private void setImmersiveMode() {
+        // For Android 11 and above
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+            final WindowInsetsController insetsController = getWindow().getInsetsController();
+            if (insetsController != null) {
+                insetsController.hide(WindowInsets.Type.statusBars() | WindowInsets.Type.navigationBars());
+                insetsController.setSystemBarsBehavior(WindowInsetsController.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE);
+            }
+        } else {
+            // For older versions
+            final int flags = View.SYSTEM_UI_FLAG_IMMERSIVE_STICKY
+                    | View.SYSTEM_UI_FLAG_HIDE_NAVIGATION
+                    | View.SYSTEM_UI_FLAG_FULLSCREEN
+                    | View.SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION
+                    | View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN
+                    | View.SYSTEM_UI_FLAG_LAYOUT_STABLE;
+            getWindow().getDecorView().setSystemUiVisibility(flags);
+        }
+    }
+    private void reverseSetImmersiveMode() {
+        // For Android 11 and above
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+            final WindowInsetsController insetsController = getWindow().getInsetsController();
+            if (insetsController != null) {
+                insetsController.show(WindowInsets.Type.statusBars() | WindowInsets.Type.navigationBars());
+                insetsController.setSystemBarsBehavior(WindowInsetsController.BEHAVIOR_DEFAULT);
+            }
+        } else {
+            // For older versions
+            final int flags = 0; // No flags needed to reverse immersive mode
+            getWindow().getDecorView().setSystemUiVisibility(flags);
+        }
+    }
+
 }
